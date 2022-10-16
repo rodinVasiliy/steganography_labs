@@ -1,14 +1,12 @@
-import copy
+import math
 
-import numpy as np
 import PIL
+import numpy as np
 import scipy.fftpack
-from PIL import Image, ImageDraw
-import scipy as sp
-from scipy import fftpack, stats, signal
-import matplotlib.pyplot as plt
+import skimage
+from PIL import Image
 from skimage import io
-from random import random
+import skimage.metrics
 
 
 def generate_watermark(size: int, key: int, mean=0., spread=1.):
@@ -34,54 +32,115 @@ def get_watermark_array(shape, i_range, j_range, watermark):
     return array
 
 
-def insert_watermark(feature_array, alpha, watermark_array):
-    feature_array += alpha * watermark_array
-    return feature_array
+# def insert_watermark(feature_array, alpha, watermark_feautures_array):
+#     feature_array += alpha * watermark_feautures_array
+#     return feature_array
+
+def get_extracted_feautures(extracted_image, original_image, alpha, i_range, j_range):
+    features_from_original_image = get_dct(original_image)
+    features_from_extracted_image = get_dct(extracted_image)
+    features_from_extracted_watermark = []
+    for i in i_range:
+        for j in j_range:
+            features_from_extracted_watermark.append(
+                (features_from_extracted_image[i, j] - features_from_original_image[i, j]) / alpha)
+
+    return np.array(features_from_extracted_watermark)
 
 
-def get_proximity(image_array, image_with_watermark_array, alpha, watermark_array):
-    features_from_image = get_dct(image_array)
-    features_from_image_with_watermark = get_dct(image_with_watermark_array)
-    feautures_extracted_watermark = (features_from_image_with_watermark - features_from_image) / (alpha * features_from_image)
-    feautures_extracted_watermark_ravel = np.ravel(feautures_extracted_watermark)
+def insert_watermark(feature_array, alpha, watermark_feautures_array, i_range, j_range):
+    feature_array_with_watermark = np.copy(feature_array)
+    count = 0
+    for i in i_range:
+        for j in j_range:
+            feature_array_with_watermark[i, j] += alpha * watermark_feautures_array[count]
+            count += 1
+    return feature_array_with_watermark
+
+
+def get_proximity(image_array, image_with_watermark_array, alpha, watermark_array, i_range, j_range):
+    feautures_extracted_watermark = get_extracted_feautures(image_with_watermark_array, image_array, alpha, i_range,
+                                                            j_range)
     feautures_watermark = get_dct(watermark_array)
-    feautures_watermark_ravel = np.ravel(feautures_watermark)
     sum_1 = 0
     sum_2 = 0
     sum_3 = 0
-    for i in range(0, feautures_extracted_watermark_ravel.size):
-        sum_1 += feautures_extracted_watermark_ravel[i] * feautures_watermark_ravel[i]
-        sum_2 += feautures_extracted_watermark_ravel[i] * feautures_extracted_watermark_ravel[i]
-        sum_3 += feautures_watermark_ravel[i] * feautures_watermark_ravel[i]
+    for i in range(0, feautures_extracted_watermark.size):
+        sum_1 += feautures_extracted_watermark[i] * feautures_watermark[i]
+        sum_2 += feautures_extracted_watermark[i] * feautures_extracted_watermark[i]
+        sum_3 += feautures_watermark[i] * feautures_watermark[i]
     return sum_1 / (np.sqrt(sum_2) * np.sqrt(sum_3))
 
 
 if __name__ == '__main__':
+    # Реализовать генерацию ЦВЗ 𝛺 как псевдослучайной последовательности
+    # заданной длины из чисел, распределённых по нормальному закону
+    start_image = PIL.Image.open("bridge.tif")
+    image = io.imread(r"bridge.tif").astype(int)
+    # c = 0.5
+    # size = image.shape[0] * image.shape[1] * c
     size_watermark = 24576
     watermark = generate_watermark(size=size_watermark, key=1)
 
-    start_image = PIL.Image.open("bridge.tif")
-    image = io.imread(r"bridge.tif").astype(int)
-    features = get_dct(image)
+    # Реализовать трансформацию исходного контейнера к пространству признаков согласно варианту задания.
+    features_image = get_dct(image)
 
     # image_from_idct = get_inverse_dct(features)
     # io.imshow(image_from_idct)
     # io.show()
 
+    # Осуществить встраивание информации методом, определяемым
+    # вариантом задания. Значения параметра встраивания устанавливается произвольным образом
     i_range = range(0, 192)
     j_range = range(128, 256)
-    watermark_array = get_watermark_array(image.shape, i_range, j_range, watermark)
-    alpha = 0.9
-    features_watermark_array = get_dct(watermark_array)
-    features_with_watermark = insert_watermark(feature_array=features, alpha=alpha, watermark_array=features_watermark_array)
+    alpha = 7.2
+    features_watermark_array = get_dct(watermark)
+    features_with_watermark = insert_watermark(feature_array=features_image, alpha=alpha,
+                                               watermark_feautures_array=features_watermark_array, i_range=i_range,
+                                               j_range=j_range)
     new_image = get_inverse_dct(features_with_watermark)
     io.imshow(new_image, cmap='gray')
     io.imsave('image_with_watermark.tif', new_image)
 
+    # Считать носитель информации из файла и повторно выполнить п. 2 для носителя информации
     image_with_watermark = io.imread('image_with_watermark.tif').astype(int)
-    features_with_watermark = get_dct(image_with_watermark)
 
-    ro = get_proximity(image, image_with_watermark, alpha, watermark_array)
+    ro = get_proximity(image, image_with_watermark, alpha, watermark, i_range=i_range, j_range=j_range)
     print(ro)
 
+    ro_array = []
+    ro_array.append(ro)
+
     io.show()
+    alpha = 0.5
+    features_image = get_dct(image)
+    features_watermark_array = get_dct(watermark)
+    best_alpha = 0
+    best_ro = 0
+    best_psnr = 0
+    for i in range(0, 100):
+        features_with_watermark = insert_watermark(feature_array=features_image, alpha=alpha,
+                                                   watermark_feautures_array=features_watermark_array, i_range=i_range,
+                                                   j_range=j_range)
+        new_image = get_inverse_dct(features_with_watermark)
+        ro = get_proximity(image, new_image, alpha, watermark, i_range=i_range, j_range=j_range)
+        psnr = skimage.metrics.peak_signal_noise_ratio(image, new_image)
+        print(f"iteration № {i}  alpha = {alpha}  ro = {ro}  psnr = {psnr}")
+        if ro >= 0.9:
+            best_alpha = alpha
+            best_ro = ro
+            best_psnr = psnr
+            break
+        alpha += 0.1
+    print(f"best alpha = {best_alpha}  best ro = {ro}  best psnr = {best_psnr}")
+
+
+    for i in range(0, 100):
+        test_watermark = generate_watermark(size_watermark, key=1)
+        features_watermark_array = get_dct(test_watermark)
+        features_with_watermark = insert_watermark(feature_array=features_image, alpha=best_alpha,
+                                                   watermark_feautures_array=features_watermark_array, i_range=i_range,
+                                                   j_range=j_range)
+        new_image = get_inverse_dct(features_with_watermark)
+        ro = get_proximity(image, new_image, alpha, watermark, i_range=i_range, j_range=j_range)
+        ro_array.append(ro)
