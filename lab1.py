@@ -76,14 +76,14 @@ if __name__ == '__main__':
     baboon_image = cv2.imread('baboon.tif')
     ornament = cv2.imread('ornament.tif')
     cv2.imshow("Original", baboon_image)
-    # svi_1_result = encode_svi1(baboon_image, ornament, 'green', 3)
-    # svi_1_decode = decode_svi1(svi_1_result, 'green', 3)
-    #
-    # cv2.imshow("Original", baboon_image)
-    # cv2.imshow("SVI-1 Encoded", svi_1_result)
-    # cv2.imshow("SVI-1 Decoded", svi_1_decode)
-    #
-    # cv2.waitKey(0)
+    svi_1_result = encode_svi1(baboon_image, ornament, 'green', 3)
+    svi_1_decode = decode_svi1(svi_1_result, 'green', 3)
+
+    cv2.imshow("Original", baboon_image)
+    cv2.imshow("SVI-1 Encoded", svi_1_result)
+    cv2.imshow("SVI-1 Decoded", svi_1_decode)
+
+    cv2.waitKey(0)
     VAR = 5
     DELTA = 4 + (4 * VAR) % 3
 
