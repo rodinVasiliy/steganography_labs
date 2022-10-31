@@ -5,9 +5,9 @@ import numpy as np
 import scipy.fftpack
 import skimage
 from PIL import Image
+from matplotlib import pyplot as plt
 from skimage import io
 import skimage.metrics
-
 
 def generate_watermark(size: int, key: int, mean=0., spread=1.):
     rng = np.random.default_rng(key)
@@ -18,8 +18,8 @@ def get_dct(array):
     return scipy.fftpack.dct(array)
 
 
-def get_inverse_dct(feauture_array):
-    return scipy.fftpack.idct(feauture_array)
+def get_inverse_dct(feature_array):
+    return scipy.fftpack.idct(feature_array)
 
 
 def get_watermark_array(shape, i_range, j_range, watermark):
@@ -32,11 +32,11 @@ def get_watermark_array(shape, i_range, j_range, watermark):
     return array
 
 
-# def insert_watermark(feature_array, alpha, watermark_feautures_array):
-#     feature_array += alpha * watermark_feautures_array
+# def insert_watermark(feature_array, alpha, watermark_features_array):
+#     feature_array += alpha * watermark_features_array
 #     return feature_array
 
-def get_extracted_feautures(extracted_image, original_image, alpha, i_range, j_range):
+def get_extracted_features(extracted_image, original_image, alpha, i_range, j_range):
     features_from_original_image = get_dct(original_image)
     features_from_extracted_image = get_dct(extracted_image)
     features_from_extracted_watermark = []
@@ -48,27 +48,27 @@ def get_extracted_feautures(extracted_image, original_image, alpha, i_range, j_r
     return np.array(features_from_extracted_watermark)
 
 
-def insert_watermark(feature_array, alpha, watermark_feautures_array, i_range, j_range):
+def insert_watermark(feature_array, alpha, watermark_features_array, i_range, j_range):
     feature_array_with_watermark = np.copy(feature_array)
     count = 0
     for i in i_range:
         for j in j_range:
-            feature_array_with_watermark[i, j] += alpha * watermark_feautures_array[count]
+            feature_array_with_watermark[i, j] += alpha * watermark_features_array[count]
             count += 1
     return feature_array_with_watermark
 
 
 def get_proximity(image_array, image_with_watermark_array, alpha, watermark_array, i_range, j_range):
-    feautures_extracted_watermark = get_extracted_feautures(image_with_watermark_array, image_array, alpha, i_range,
-                                                            j_range)
-    feautures_watermark = get_dct(watermark_array)
+    features_extracted_watermark = get_extracted_features(image_with_watermark_array, image_array, alpha, i_range,
+                                                          j_range)
+    features_watermark = get_dct(watermark_array)
     sum_1 = 0
     sum_2 = 0
     sum_3 = 0
-    for i in range(0, feautures_extracted_watermark.size):
-        sum_1 += feautures_extracted_watermark[i] * feautures_watermark[i]
-        sum_2 += feautures_extracted_watermark[i] * feautures_extracted_watermark[i]
-        sum_3 += feautures_watermark[i] * feautures_watermark[i]
+    for n in range(0, features_extracted_watermark.size):
+        sum_1 += features_extracted_watermark[n] * features_watermark[n]
+        sum_2 += features_extracted_watermark[n] * features_extracted_watermark[n]
+        sum_3 += features_watermark[n] * features_watermark[n]
     return sum_1 / (np.sqrt(sum_2) * np.sqrt(sum_3))
 
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     alpha = 7.2
     features_watermark_array = get_dct(watermark)
     features_with_watermark = insert_watermark(feature_array=features_image, alpha=alpha,
-                                               watermark_feautures_array=features_watermark_array, i_range=i_range,
+                                               watermark_features_array=features_watermark_array, i_range=i_range,
                                                j_range=j_range)
     new_image = get_inverse_dct(features_with_watermark)
     io.imshow(new_image, cmap='gray')
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     best_psnr = 0
     for i in range(0, 100):
         features_with_watermark = insert_watermark(feature_array=features_image, alpha=alpha,
-                                                   watermark_feautures_array=features_watermark_array, i_range=i_range,
+                                                   watermark_features_array=features_watermark_array, i_range=i_range,
                                                    j_range=j_range)
         new_image = get_inverse_dct(features_with_watermark)
         ro = get_proximity(image, new_image, alpha, watermark, i_range=i_range, j_range=j_range)
@@ -134,13 +134,18 @@ if __name__ == '__main__':
         alpha += 0.1
     print(f"best alpha = {best_alpha}  best ro = {ro}  best psnr = {best_psnr}")
 
-
+    # ложное обнаружение
     for i in range(0, 100):
         test_watermark = generate_watermark(size_watermark, key=1)
         features_watermark_array = get_dct(test_watermark)
         features_with_watermark = insert_watermark(feature_array=features_image, alpha=best_alpha,
-                                                   watermark_feautures_array=features_watermark_array, i_range=i_range,
+                                                   watermark_features_array=features_watermark_array, i_range=i_range,
                                                    j_range=j_range)
         new_image = get_inverse_dct(features_with_watermark)
         ro = get_proximity(image, new_image, alpha, watermark, i_range=i_range, j_range=j_range)
         ro_array.append(ro)
+    print(ro_array)
+    x = np.arange(0, 101)
+    fig, ax = plt.subplots()
+    ax.plot(x, np.array(ro_array))
+    plt.show()
