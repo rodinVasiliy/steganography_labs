@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from skimage import io
 import skimage.metrics
 
+
 def generate_watermark(size: int, key: int, mean=0., spread=1.):
     rng = np.random.default_rng(key)
     return rng.normal(mean, spread, size)
@@ -133,16 +134,11 @@ if __name__ == '__main__':
             break
         alpha += 0.1
     print(f"best alpha = {best_alpha}  best ro = {ro}  best psnr = {best_psnr}")
-
+    alpha = 0.7
     # ложное обнаружение
     for i in range(0, 100):
-        test_watermark = generate_watermark(size_watermark, key=1)
-        features_watermark_array = get_dct(test_watermark)
-        features_with_watermark = insert_watermark(feature_array=features_image, alpha=best_alpha,
-                                                   watermark_features_array=features_watermark_array, i_range=i_range,
-                                                   j_range=j_range)
-        new_image = get_inverse_dct(features_with_watermark)
-        ro = get_proximity(image, new_image, alpha, watermark, i_range=i_range, j_range=j_range)
+        test_watermark = generate_watermark(size_watermark, key=i + 5)
+        ro = get_proximity(image, new_image, alpha, test_watermark, i_range=i_range, j_range=j_range)
         ro_array.append(ro)
     print(ro_array)
     x = np.arange(0, 101)
