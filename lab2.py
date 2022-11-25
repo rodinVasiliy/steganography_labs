@@ -20,6 +20,10 @@ def get_dctn(array):
 
 def get_inverse_dctn(feature_array):
     return scipy.fftpack.idctn(feature_array, norm='ortho')
+    # result = scipy.fftpack.idctn(feature_array, norm='ortho')
+    # result[result < 0] = 0
+    # result[result > 255] = 255
+    # return result.astype('uint8')
 
 
 def get_watermark_array(shape, range, watermark):
