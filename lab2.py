@@ -145,7 +145,7 @@ if __name__ == '__main__':
     вариантом задания. Значения параметра встраивания устанавливается произвольным образом
     """
 
-    alpha = random.random()
+    alpha = 0.9
     print(f"alpha = {alpha}")
     f_W = insert_watermark(feature_array=f, alpha=alpha,
                            watermark=watermark, watermark_range=watermark_range)
