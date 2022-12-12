@@ -19,11 +19,11 @@ def get_dctn(array):
 
 
 def get_inverse_dctn(feature_array):
-    return scipy.fftpack.idctn(feature_array, norm='ortho')
-    # result = scipy.fftpack.idctn(feature_array, norm='ortho')
-    # result[result < 0] = 0
-    # result[result > 255] = 255
-    # return result.astype('uint8')
+    # return scipy.fftpack.idctn(feature_array, norm='ortho')
+    result = scipy.fftpack.idctn(feature_array, norm='ortho')
+    result[result < 0] = 0
+    result[result > 255] = 255
+    return result.astype('uint8')
 
 
 def get_watermark_array(shape, range, watermark):
@@ -77,6 +77,8 @@ def get_proximity(f, f_w, alpha, watermark_array, watermark_range: [int, int]):
         sum_1 += features_extracted_watermark[n] * features_watermark[n]
         sum_2 += features_extracted_watermark[n] * features_extracted_watermark[n]
         sum_3 += features_watermark[n] * features_watermark[n]
+    if sum_1 < 0:
+        sum_1 *= -1
     return sum_1 / (np.sqrt(sum_2) * np.sqrt(sum_3))
 
 
@@ -126,7 +128,7 @@ if __name__ == '__main__':
     """
 
     start_image = PIL.Image.open("bridge.tif")
-    C = io.imread(r"bridge.tif").astype(int)
+    C = io.imread(r"bridge.tif")
     size_watermark = 24576
 
     i_range = range(0, 192)
