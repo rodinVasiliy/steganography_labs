@@ -15,12 +15,12 @@ from PIL import Image
 from scipy.ndimage import rotate as rotate_image
 
 
+
 def show_tesing_results(x, y, xlabel, ylabel, plt_label):
     plt.plot(x, y, label=plt_label)
     plt.legend()
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-
 
 def get_preprocessed_image(C_W, C, param, name_preprocessing):
     if name_preprocessing == 'cut':
